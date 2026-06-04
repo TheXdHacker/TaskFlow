@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Production build outputs
+client/dist/
+dist/
+
+# Environment files (contains secrets!)
+.env
+server/.env
+
+# Logs and system files
+*.log
+logs/
+.DS_Store
+Thumbs.db
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
