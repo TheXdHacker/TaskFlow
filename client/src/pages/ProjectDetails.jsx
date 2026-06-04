@@ -6,17 +6,19 @@ import { useAuthStore } from '../store/authStore';
 import TaskCard from '../components/TaskCard';
 import TaskModal from '../components/TaskModal';
 import ProjectModal from '../components/ProjectModal';
+import { AddMembersModal } from '../components/AddMembersModal';
 import { Plus, Users, Settings, Trash2, ChevronLeft, Calendar } from 'lucide-react';
 
 const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { currentProject, fetchProjectById, deleteProject, loading: projectLoading } = useProjectStore();
+  const { currentProject, fetchProjectById, updateProject, deleteProject, loading: projectLoading } = useProjectStore();
   const { tasks, fetchTasks, loading: tasksLoading } = useTaskStore();
 
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [addMembersOpen, setAddMembersOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
 
   // Fetch project details and tasks on component mount
@@ -42,6 +44,15 @@ const ProjectDetails = () => {
   const handleCreateTaskClick = () => {
     setTaskToEdit(null); // Clear previous edit state
     setTaskModalOpen(true);
+  };
+
+  const handleAddMembers = async (updatedMemberIds) => {
+    const result = await updateProject(currentProject._id, {
+      members: updatedMemberIds,
+    });
+    if (result.success) {
+      fetchProjectById(id);
+    }
   };
 
   // 1. Separate tasks into Kanban board columns based on status
@@ -207,9 +218,21 @@ const ProjectDetails = () => {
 
         {/* Right Pane: Members Sidebar Drawer (Span 1/4) */}
         <div className="xl:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm transition-all">
-          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-            <Users size={16} className="text-indigo-500" />
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Workspace Members</h3>
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-indigo-500" />
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Workspace Members</h3>
+            </div>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setAddMembersOpen(true)}
+                className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                title="Add Members"
+              >
+                <Plus size={12} />
+                Add
+              </button>
+            )}
           </div>
 
           <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
@@ -254,6 +277,14 @@ const ProjectDetails = () => {
           projectToEdit={currentProject}
         />
       )}
+
+      {/* Add Members Modal (Admin Only) */}
+      <AddMembersModal
+        isOpen={addMembersOpen}
+        onClose={() => setAddMembersOpen(false)}
+        currentMembers={currentProject.members}
+        onAdd={handleAddMembers}
+      />
 
     </div>
   );

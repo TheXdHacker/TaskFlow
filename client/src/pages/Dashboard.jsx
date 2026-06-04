@@ -2,15 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { useTaskStore } from '../store/taskStore';
 import { useAuthStore } from '../store/authStore';
-import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { CheckCircle2, Circle, Clock, AlertTriangle, Filter, ListTodo } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertTriangle, Filter, ListTodo, FolderKanban, Percent, ClipboardList } from 'lucide-react';
 import TaskCard from '../components/TaskCard';
+import TaskModal from '../components/TaskModal';
 
 const Dashboard = () => {
   const { user } = useAuthStore();
   const { projects, fetchProjects } = useProjectStore();
   const { tasks, fetchTasks } = useTaskStore();
   const [selectedProject, setSelectedProject] = useState('all');
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+
+  const handleEditTask = (task) => {
+    setTaskToEdit(task);
+    setTaskModalOpen(true);
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -137,92 +144,140 @@ const Dashboard = () => {
 
       </div>
 
-      {/* Graphical Charts Section */}
+      {/* Number-Based Analytics Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Recharts Pie Chart: Task Status Split */}
-        <div className="glass-card p-6 rounded-3xl lg:col-span-1 flex flex-col justify-between">
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base mb-4">Task Status Distribution</h3>
-          
-          <div className="h-64 relative flex items-center justify-center">
-            {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '12px', 
-                      background: 'rgba(30, 41, 59, 0.9)', 
-                      color: '#fff', 
-                      border: 'none', 
-                      fontSize: '12px' 
-                    }} 
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center text-sm text-slate-400">No active tasks to visualize.</div>
-            )}
+        {/* Panel 1: Task Status Breakdown */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm transition-all duration-300 flex flex-col justify-between lg:col-span-1">
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base mb-1">Task Status Breakdown</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-6">Numerical overview of active task states</p>
             
-            {/* Center Summary Label (doughnut hole content) */}
-            {pieData.length > 0 && (
-              <div className="absolute flex flex-col items-center">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total</span>
-                <span className="text-2xl font-black text-slate-700 dark:text-slate-200">{totalTasks}</span>
+            <div className="space-y-4">
+              {/* To Do State */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                    To Do
+                  </span>
+                  <span className="text-slate-700 dark:text-slate-300 font-bold">{todoTasks} tasks ({totalTasks > 0 ? Math.round((todoTasks / totalTasks) * 100) : 0}%)</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalTasks > 0 ? (todoTasks / totalTasks) * 100 : 0}%` }} />
+                </div>
               </div>
-            )}
+
+              {/* In Progress State */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    In Progress
+                  </span>
+                  <span className="text-slate-700 dark:text-slate-300 font-bold">{inProgressTasks} tasks ({totalTasks > 0 ? Math.round((inProgressTasks / totalTasks) * 100) : 0}%)</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalTasks > 0 ? (inProgressTasks / totalTasks) * 100 : 0}%` }} />
+                </div>
+              </div>
+
+              {/* Completed State */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Completed
+                  </span>
+                  <span className="text-slate-700 dark:text-slate-300 font-bold">{doneTasks} tasks ({totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0}%)</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0}%` }} />
+                </div>
+              </div>
+
+              {/* Overdue State */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    Overdue
+                  </span>
+                  <span className="text-rose-600 dark:text-rose-400 font-bold">{overdueTasksCount} tasks ({totalTasks > 0 ? Math.round((overdueTasksCount / totalTasks) * 100) : 0}%)</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalTasks > 0 ? (overdueTasksCount / totalTasks) * 100 : 0}%` }} />
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Chart Custom Legend */}
-          <div className="flex items-center justify-around text-xs mt-4">
-            {pieData.map(item => (
-              <div key={item.name} className="flex items-center gap-1.5 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-slate-600 dark:text-slate-400">{item.name} ({item.value})</span>
-              </div>
-            ))}
+          <div className="border-t border-slate-100 dark:border-slate-800 mt-6 pt-4 flex items-center justify-between text-xs text-slate-400">
+            <span>Overall completion rate:</span>
+            <span className="font-extrabold text-slate-700 dark:text-slate-200 flex items-center gap-0.5 font-sans">
+              <Percent size={12} />
+              {totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0}%
+            </span>
           </div>
         </div>
 
-        {/* Recharts Bar Chart: Projects Task Load */}
-        <div className="glass-card p-6 rounded-3xl lg:col-span-2">
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base mb-4">Project Load & Progression</h3>
-          
-          <div className="h-64">
-            {barData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData}>
-                  <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} tickLine={false} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '12px', 
-                      background: 'rgba(30, 41, 59, 0.9)', 
-                      color: '#fff', 
-                      border: 'none' 
-                    }} 
-                  />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="To Do" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="In Progress" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="Completed" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-slate-400">No project details available.</div>
-            )}
+        {/* Panel 2: Project Task Summary List */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm transition-all duration-300 lg:col-span-2">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Project Status Matrix</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Workspace project tasks breakdown & progress metrics</p>
+            </div>
+          </div>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="py-2.5">Project Workspace</th>
+                  <th className="py-2.5 text-center">To Do</th>
+                  <th className="py-2.5 text-center">In Progress</th>
+                  <th className="py-2.5 text-center">Completed</th>
+                  <th className="py-2.5 text-center">Total</th>
+                  <th className="py-2.5 text-right">Completion Rate</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                {barData.length > 0 ? (
+                  barData.map(proj => {
+                    const projTotal = proj['To Do'] + proj['In Progress'] + proj['Completed'];
+                    const completionRate = projTotal > 0 ? Math.round((proj['Completed'] / projTotal) * 100) : 0;
+                    
+                    return (
+                      <tr key={proj.name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                        <td className="py-3 font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <div className="p-1 bg-indigo-500/10 text-indigo-500 rounded-lg">
+                            <FolderKanban size={14} />
+                          </div>
+                          <span className="truncate max-w-[150px] md:max-w-[200px]" title={proj.name}>{proj.name}</span>
+                        </td>
+                        <td className="py-3 text-center font-bold text-indigo-500">{proj['To Do']}</td>
+                        <td className="py-3 text-center font-bold text-amber-500">{proj['In Progress']}</td>
+                        <td className="py-3 text-center font-bold text-emerald-500">{proj['Completed']}</td>
+                        <td className="py-3 text-center font-bold text-slate-500">{projTotal}</td>
+                        <td className="py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden hidden sm:block">
+                              <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${completionRate}%` }} />
+                            </div>
+                            <span className="font-extrabold text-slate-700 dark:text-slate-300">{completionRate}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="py-6 text-center text-slate-400">No projects to display data.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -245,7 +300,7 @@ const Dashboard = () => {
         {myTasks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {myTasks.map(task => (
-              <TaskCard key={task._id} task={task} />
+              <TaskCard key={task._id} task={task} onEdit={handleEditTask} />
             ))}
           </div>
         ) : (
@@ -256,6 +311,14 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Task Modal for Editing */}
+      <TaskModal
+        isOpen={taskModalOpen}
+        onClose={() => setTaskModalOpen(false)}
+        taskToEdit={taskToEdit}
+        projectId={taskToEdit?.project?._id || taskToEdit?.project}
+      />
 
     </div>
   );
