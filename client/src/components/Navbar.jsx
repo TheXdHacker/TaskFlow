@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, Sun, Moon, Bell, X, Check, AlertTriangle, Info, BellOff } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, X, Check, AlertTriangle, Info, BellOff, Mail, Shield, LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const Navbar = ({ toggleSidebar }) => {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   
   // Seed initial notification state
   const [notifications, setNotifications] = useState([
@@ -236,9 +237,75 @@ const Navbar = ({ toggleSidebar }) => {
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* User avatar indicator (Initials) */}
-        <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white text-xs border border-indigo-700">
-          {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'WA'}
+        {/* Profile avatar button and dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowProfile(!showProfile)}
+            className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white text-xs border border-indigo-700 hover:opacity-90 transition-all cursor-pointer"
+            title="User Profile"
+          >
+            {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'WA'}
+          </button>
+
+          {showProfile && (
+            <>
+              {/* Backdrop to close profile dropdown */}
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowProfile(false)}
+              />
+              <div className="absolute right-0 mt-2.5 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden z-50 transition-all duration-300 transform origin-top-right">
+                
+                {/* User Info Header */}
+                <div className="px-4 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white text-sm border border-indigo-700 shadow-sm">
+                      {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'WA'}
+                    </div>
+                    <div className="min-w-0 flex-grow">
+                      <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{user?.name || 'Workspace User'}</h4>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
+                        {user?.role === 'admin' ? 'Admin' : 'Member'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details Section */}
+                <div className="p-2 space-y-1">
+                  <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
+                    <Mail size={14} className="text-slate-400" />
+                    <span className="truncate">{user?.email || 'user@taskflow.com'}</span>
+                  </div>
+                  {user?.role === 'admin' && (
+                    <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
+                      <Shield size={14} className="text-rose-500" />
+                      <span>Administrative Access</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+                {/* Actions */}
+                <div className="p-2">
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      if (confirm('Are you sure you want to log out?')) {
+                        logout();
+                      }
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors text-left cursor-pointer"
+                  >
+                    <LogOut size={14} />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>
