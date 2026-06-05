@@ -21,7 +21,7 @@ exports.getTasks = async (req, res) => {
       }
 
       // If user is a member, make sure they belong to the project
-      if (req.user.role !== 'admin' && !project.members.includes(req.user._id.toString())) {
+      if (req.user.role !== 'admin' && !project.members.some(m => m.toString() === req.user._id.toString())) {
         return res.status(403).json({ success: false, message: 'Not authorized to view tasks for this project.' });
       }
 
@@ -129,7 +129,7 @@ exports.updateTask = async (req, res) => {
 
       // Check if member belongs to the project containing this task
       const project = await Project.findById(task.project);
-      if (!project || !project.members.includes(req.user._id.toString())) {
+      if (!project || !project.members.some(m => m.toString() === req.user._id.toString())) {
         return res.status(403).json({ success: false, message: 'Not authorized to modify tasks for this project.' });
       }
     }
